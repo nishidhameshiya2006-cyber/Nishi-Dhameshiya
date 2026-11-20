@@ -1,0 +1,6 @@
+{
+  "name": "Realm Forge — Fantasy Character Creator",
+  "description": "Generate random fantasy characters with unique names, classic RPG classes, attributes, and lore.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
