@@ -20,7 +20,11 @@ export interface FantasyCharacter {
   trait: string;
   signatureGear: string;
   backstory: string;
+  health: number;
+  mana: number;
+  strength: number;
   attributes: CharacterAttributes;
+  portraitVariant?: number;
 }
 
 export interface ClassDefinition {
@@ -431,6 +435,165 @@ function buildUniqueName(def: ClassDefinition, usedNames?: Set<string>): string 
   return `${first} ${last} ${numeral}`;
 }
 
+const BACKSTORY_BUILDERS: Record<
+  CharacterClass,
+  { openings: string[]; closings: string[] }
+> = {
+  Mage: {
+    openings: [
+      'Born beneath a fractured eclipse in {origin}, {name} mastered forbidden sigils after unlocking an observatory vault long thought barren.',
+      'Once a quiet scribe in the high scriptorium of {origin}, {name} survived an arcane tempest that etched glowing constellations across their memory.',
+      'Trained by reclusive storm-callers along the cliffs near {origin}, {name} proved their worth as a {ancestry} mage by binding lightning into glass.',
+      'Exiled from the Conclave of {origin} for questioning an ancient prophecy, {name} carried a single unburnt folio into the mist.',
+      'As a young {ancestry} apprentice in {origin}, {name} discovered that whispered ink on parchment could stir dormant ley lines awake.',
+      'Raised among ruined star-towers outside {origin}, {name} taught themselves high spellcraft from cracked astrolabes and soot-stained grimoires.',
+      'After sealing a rift that threatened to swallow {origin} in shadow, {name} emerged as a seasoned mage marked by faint silver sparks.',
+      'Sworn to recover the lost volumes of {origin}, {name} left gilded halls behind to study raw magic where empires crumbled.',
+    ],
+    closings: [
+      'Now {firstName} travels the borderlands bearing their {gear}, seeking the missing keystone to an ancient celestial chart.',
+      'Guided by omens in rising ember smoke, {firstName} trades protective wards for forgotten manuscripts and truths no king dares speak.',
+      'Wherever restless spirits or cursed relics surface, {firstName} steps forward with {gear} ready to unravel the spell.',
+      'Though rivals still hunt their research, {firstName} charts uncharted ruins in pursuit of a spell that could mend a broken realm.',
+      'With {gear} at their side, {firstName} seeks fellow wanderers brave enough to cross the cursed thresholds of the outer marches.',
+      'Every tavern rumor of waking monoliths draws {firstName} onward, determined to outwit the shadow before its tide returns.',
+      'Bearing their {gear}, {firstName} walks a lonely road between mortal courts and older powers stirring beneath the stone.',
+      'Still haunted by what whispered from the void, {firstName} hones each incantation for the reckoning yet to come.',
+    ],
+  },
+  Rogue: {
+    openings: [
+      'Raised in the fog-choked alleys and canal vaults of {origin}, {name} learned early that a quiet step outlasts any drawn blade.',
+      'Once a trusted cipher-runner for rival lords in {origin}, {name} vanished the night a sealed ledger revealed a royal betrayal.',
+      'As a sharp-eyed {ancestry} cutpurse in {origin}, {name} rose from rooftop lookouts to become a rogue whispered about in gilded halls.',
+      'Known across the harbor taverns of {origin} as a phantom locksmith, {name} never left a mark—only empty strongboxes belonging to tyrants.',
+      'Framed for a heist that shook the merchant guild of {origin}, {name} slipped past iron grates with nothing but wit and nerve.',
+      'Trained by shadow-brokers beneath the cobblestones of {origin}, {name} mastered every lock, ledger, and false crest in the realm.',
+      'When mercenaries burned their safehouse in {origin}, {name} swore to turn every stolen secret against the syndicate that ordered it.',
+      'A prodigy of sleight-of-hand from the backstreets of {origin}, {name} built a reputation for stealing back heirlooms meant for the poor.',
+    ],
+    closings: [
+      'Today {firstName} moves unseen through border courts bearing their {gear}, taking only contracts that strike at corrupt crowns.',
+      'Always counting exits before speaking, {firstName} keeps three forged passes and their {gear} tucked close for a sudden escape.',
+      'With {gear} concealed beneath a weathered cloak, {firstName} sells dangerous truths to those who can still afford honor.',
+      'Rumor says {firstName} can slip past dragon-warded vaults, yet they never betray a companion once a coin is shared.',
+      'Armed with {gear} and an unerring memory for voices, {firstName} hunts the traitorous patron who left them to the gallows.',
+      'From moonlit rooftops to smoky inns, {firstName} collects debts in silence and vanishes before the watchmen raise a lantern.',
+      'Bearing their {gear}, {firstName} follows rumors of a sunken treasury said to hold the proof that could clear their name.',
+      'Though bounty posters carry their likeness, {firstName} walks freely in plain sight—always one step ahead of the bounty.',
+    ],
+  },
+  Warrior: {
+    openings: [
+      'Forged in the brutal border skirmishes beyond {origin}, {name} stood alone at a shattered gate until dawn finally broke the siege.',
+      'Once a proud shield-bearer of {origin}, {name} walked away from a corrupt warlord rather than raise steel against innocent villagers.',
+      'Born to iron-workers in the cold valleys of {origin}, this battle-hardened {ancestry} warrior learned to trust tempered steel above promises.',
+      'Sole survivor of a vanished company from {origin}, {name} carries seven campaign scars and the unbroken oath of fallen comrades.',
+      'After winning freedom in the fighting pits of {origin} without yielding honor, {name} swore never to fight for another lord’s amusement.',
+      'Raised guarding mountain passes above {origin}, {name} earned renown as a steadfast warrior who never yielded an inch of stone.',
+      'When frost-raiders descended upon {origin}, {name} rallied townsfolk with an iron voice and drove the warband back into the dark.',
+      'Trained since youth in the garrison yards of {origin}, {name} carries the discipline of old campaigns into every new fray.',
+    ],
+    closings: [
+      'Now {firstName} escorts endangered caravans bearing their {gear}, standing firm wherever monsters prowl the road.',
+      'Before every march, {firstName} sharpens their {gear} by firelight and vows to bring every ally back alive.',
+      'With {gear} slung ready, {firstName} travels from frontier keep to frontier keep seeking the lost banner of their regiment.',
+      'Though battlefields have tried to break them, {firstName} anchors wavering allies with steady steel and unflinching grit.',
+      'Bearing their {gear}, {firstName} answers calls for aid that gilded knights consider too perilous or unprofitable.',
+      'Every scar tells of a bridge held or a comrade saved, and {firstName} still seeks one final clash worthy of song.',
+      'With {gear} in hand, {firstName} walks the scarred highroads, turning back raiders before they reach quiet hearthfires.',
+      'Quiet around the campfire yet fierce in the breach, {firstName} lets deeds written in iron speak louder than boasts.',
+    ],
+  },
+  Archer: {
+    openings: [
+      'Raised beneath the towering canopy outside {origin}, {name} learned to read shifting winds before most youths could string a bow.',
+      'A keen-eyed {ancestry} tracker from the wild borders of {origin}, {name} once guided lost travelers across blizzards without losing a single soul.',
+      'After outshooting royal marksmen at the autumn trials of {origin}, {name} refused a courtly post to patrol the untamed wilds.',
+      'Trained by silent foresters who watched the marches of {origin}, {name} became an archer capable of threading an arrow through falling leaves.',
+      'When creeping blight poisoned the timberlands near {origin}, {name} followed its blackened trail deep into forgotten valleys.',
+      'Known along the ridgeways of {origin} as a sentinel who never sleeps on watch, {name} spots ambushes miles before they spring.',
+      'Left orphaned by a beast-pack outside {origin}, {name} grew up listening to the forest and answering danger with swift, silent flight.',
+      'Having mapped three uncharted passes above {origin}, {name} returned with proof of ancient wings stirring in the peaks.',
+    ],
+    closings: [
+      'Now {firstName} ranges across distant ridges bearing their {gear}, striking threats down before allies even hear the bowstring.',
+      'Carving personal fletching beside quiet embers, {firstName} keeps their {gear} ready for whatever stalks the dark timber.',
+      'With {gear} strapped tight across their shoulder, {firstName} tracks a relentless quarry that left {origin} in ashes.',
+      'No fog or gale can spoil the aim of {firstName}, whose {gear} has turned the tide of a dozen desperate ambushes.',
+      'Guided by subtle marks on bark and stone, {firstName} protects remote settlements far beyond the reach of royal patrols.',
+      'Bearing their {gear}, {firstName} sells sharp eyes and steady arrows to expeditions bound for perilous ruins.',
+      'Every arrow carried by {firstName} is fletched for a purpose, and none are loosed until the wind itself agrees.',
+      'Still roaming the outer wilds with {gear}, {firstName} guards the forgotten trails where maps simply end.',
+    ],
+  },
+  Paladin: {
+    openings: [
+      'Knighted on the steps of {origin} after holding a burning bridge alone, {name} carries a vow forged in sunrise and ash.',
+      'Born to humble shrine-keepers in {origin}, this steadfast {ancestry} paladin took up sacred arms when undead hordes marched at dusk.',
+      'Once a haunted squire who broke under fear outside {origin}, {name} swore an unbreakable oath to shield the helpless ever after.',
+      'Inducted into the vigil orders of {origin}, {name} proved that true radiance shines brightest inside plague-darkened crypts.',
+      'Bearing the tarnished crest of a disgraced house from {origin}, {name} rides to redeem their bloodline through selfless mercy.',
+      'Chosen by an ancient temple bell that rang unbidden in {origin}, {name} left quiet cloisters behind to confront waking evil.',
+      'When darkness veiled the pilgrim roads near {origin}, {name} lit a lone sanctuary lantern and stood watch until morning.',
+      'Sworn before the high altar of {origin}, {name} tempered fierce martial skill with calm compassion for the downtrodden.',
+    ],
+    closings: [
+      'Now {firstName} rides through shadowed provinces bearing their {gear}, banishing dread wherever pilgrims lose hope.',
+      'Polishing their {gear} at first light each dawn, {firstName} honors every promise spoken aloud—even before hostile kings.',
+      'With {gear} gleaming against the gloom, {firstName} shields the wounded first and seeks justice without cruelty.',
+      'Though tempting bargains whisper from cursed shrines, {firstName} stands immovable with {gear} raised in quiet defiance.',
+      'Bearing their {gear}, {firstName} follows rumors of a desecrated relic that must be reclaimed before the next solstice.',
+      'Where tyrants rule through terror, {firstName} arrives with {gear} and an oath that cannot be bought or broken.',
+      'Every dawn renews the resolve of {firstName}, whose steady presence steadies frightened hearts in the darkest vault.',
+      'Guided by faith rather than gold, {firstName} walks the realm’s scarred roads until peace takes root once more.',
+    ],
+  },
+};
+
+export function generateUniqueBackstory(
+  char: Pick<FantasyCharacter, 'name' | 'characterClass' | 'ancestry' | 'origin' | 'signatureGear' | 'backstory'>,
+  usedBackstories?: Set<string>
+): string {
+  const pool = BACKSTORY_BUILDERS[char.characterClass];
+  const firstName = char.name.split(' ')[0] || char.name;
+
+  const fill = (template: string) =>
+    template
+      .replaceAll('{name}', char.name)
+      .replaceAll('{firstName}', firstName)
+      .replaceAll('{ancestry}', char.ancestry.toLowerCase())
+      .replaceAll('{origin}', char.origin)
+      .replaceAll('{gear}', char.signatureGear);
+
+  for (let attempt = 0; attempt < 64; attempt++) {
+    const opening = randomItem(pool.openings);
+    const closing = randomItem(pool.closings);
+    const candidate = `${fill(opening)} ${fill(closing)}`;
+    if (candidate !== char.backstory && (!usedBackstories || !usedBackstories.has(candidate))) {
+      return candidate;
+    }
+  }
+
+  // Guaranteed fallback if pool exhausted for this exact character
+  const opening = randomItem(pool.openings);
+  const closing = randomItem(pool.closings);
+  const fallback = `${fill(opening)} ${fill(closing)}`;
+  if (fallback !== char.backstory) {
+    return fallback;
+  }
+  const altClosing = pool.closings.find((c) => `${fill(opening)} ${fill(c)}` !== char.backstory) ?? pool.closings[0];
+  return `${fill(opening)} ${fill(altClosing)}`;
+}
+
+export function generateVitalStats(): { health: number; mana: number; strength: number } {
+  return {
+    health: randomInt(50, 100),
+    mana: randomInt(20, 100),
+    strength: randomInt(10, 100),
+  };
+}
+
 export function generateRandomCharacter(
   usedNames?: Set<string>,
   options?: { forcedClass?: CharacterClass; excludeClass?: CharacterClass }
@@ -452,17 +615,36 @@ export function generateRandomCharacter(
     CHA: randomInt(def.statProfile.CHA[0], def.statProfile.CHA[1]),
   };
 
+  const name = buildUniqueName(def, usedNames);
+  const ancestry = randomItem(ANCESTRIES);
+  const origin = randomItem(ORIGINS);
+  const signatureGear = randomItem(def.gearOptions);
+
+  const backstory = generateUniqueBackstory({
+    name,
+    characterClass: chosenClass,
+    ancestry,
+    origin,
+    signatureGear,
+    backstory: '',
+  });
+
+  const { health, mana, strength } = generateVitalStats();
+
   return {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    name: buildUniqueName(def, usedNames),
+    name,
     characterClass: chosenClass,
     role: def.role,
-    ancestry: randomItem(ANCESTRIES),
-    origin: randomItem(ORIGINS),
+    ancestry,
+    origin,
     alignment: randomItem(ALIGNMENTS),
     trait: randomItem(def.traits),
-    signatureGear: randomItem(def.gearOptions),
-    backstory: randomItem(def.backstories),
+    signatureGear,
+    backstory,
+    health,
+    mana,
+    strength,
     attributes,
   };
 }

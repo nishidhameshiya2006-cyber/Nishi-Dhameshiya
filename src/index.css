@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Cinzel", Georgia, serif;
+  --font-display: "Cinzel Decorative", Georgia, serif;
   --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
@@ -17,4 +17,47 @@
       scroll-behavior: auto;
     }
   }
+}
+
+.alchemist-workbench {
+  background-color: #0c0a08;
+  background-image:
+    radial-gradient(ellipse 80% 50% at 50% 0%, rgba(196, 138, 53, 0.14) 0%, rgba(196, 138, 53, 0.03) 45%, transparent 75%),
+    radial-gradient(circle at 12% 38%, rgba(20, 184, 166, 0.07) 0%, transparent 42%),
+    radial-gradient(circle at 88% 72%, rgba(168, 107, 45, 0.09) 0%, transparent 46%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 232, 185, 0.012) 0px,
+      rgba(255, 232, 185, 0.012) 1px,
+      transparent 1px,
+      transparent 14px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 0.18) 0px,
+      rgba(0, 0, 0, 0.18) 2px,
+      transparent 2px,
+      transparent 48px
+    );
+}
+
+.alchemist-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='0.055'/%3E%3C/svg%3E");
+}
+
+.alchemist-ledger {
+  background: linear-gradient(165deg, rgba(28, 22, 17, 0.96) 0%, rgba(18, 14, 11, 0.98) 60%, rgba(15, 13, 12, 0.99) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(235, 192, 109, 0.14),
+    0 24px 56px -18px rgba(0, 0, 0, 0.78);
+}
+
+.brass-rule {
+  background: linear-gradient(
+    90deg,
+    rgba(201, 155, 73, 0.08) 0%,
+    rgba(201, 155, 73, 0.38) 50%,
+    rgba(201, 155, 73, 0.08) 100%
+  );
+  height: 1px;
 }
